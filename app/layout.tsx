@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Toaster } from "sonner";
 import { AuthProviderWrapper } from "@/features/auth/components/AuthProviderWrapper";
+import { SocketProvider } from "@/features/race/context/Socket";
 
 export const metadata: Metadata = {
   title: "Typeracer",
@@ -18,8 +19,10 @@ export default function RootLayout({
       <body>
         <main>
           <AuthProviderWrapper>
-            {children}
-            <Toaster />
+            <SocketProvider>
+              {children}
+              <Toaster />
+            </SocketProvider>
           </AuthProviderWrapper>
         </main>
       </body>
