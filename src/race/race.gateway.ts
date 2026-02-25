@@ -29,7 +29,7 @@ export class RaceGateway implements OnGatewayDisconnect, OnGatewayConnection {
   @SubscribeMessage('createRace')
   handleCreate(socket: Socket, data: any) {
     const { userId, username, name } = data;
-    const race = this.raceService.createRace(socket.id, name);
+    const race = this.raceService.createRace(userId, name);
     this.raceService.joinRace(race.id, socket.id, { id: userId, username });
     socket.join(race.id);
     this.server.emit('raceList', this.raceService.listPending());
@@ -55,10 +55,6 @@ export class RaceGateway implements OnGatewayDisconnect, OnGatewayConnection {
   @SubscribeMessage('startRace')
   handleStart(socket: Socket, raceId: string) {
     const race = this.raceService.getRace(raceId);
-    if (!race || race.hostId !== socket.id) {
-      socket.emit('error', { message: 'Only host can start' });
-      return;
-    }
 
     this.raceService.startCountdown(
       raceId,
