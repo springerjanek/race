@@ -16,7 +16,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
 
   useEffect(() => {
-    const s = io("http://localhost:3000");
+    const s = io(process.env.NEXT_PUBLIC_BACKEND_URL);
     setSocket(s);
 
     return () => {
