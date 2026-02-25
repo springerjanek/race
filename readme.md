@@ -20,9 +20,9 @@ Frontend code at `fe` branch, Backend code at `main` branch
 
 ##  things to fix / to do I've notices during coding
 
-### Scoreboard
-- Needs to properly fetch user statistics from the backend.
-- Should persist race results and aggregate long-term metrics.
+### Scoreboard page (lack of it)
+- need to add fetching users from backend
+- need to add filtering logic/pagination
 
 ###  Progress Between Rounds
 
@@ -34,10 +34,6 @@ Frontend code at `fe` branch, Backend code at `main` branch
   - JWT + HttpOnly cookies would be implemented.
   - Proper refresh token handling would be added.
 - Loading states should be added to prevent multiple `/login` requests from being triggered rapidly.
-
-### Scoreboard page 
-- Fetching users from backend
-- add filtering logic/pagination
 
 ###  FAQ Page
 - Was thinking about adding faq page with scoring logic so users know how theyre getting total points
