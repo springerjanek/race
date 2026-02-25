@@ -28,7 +28,9 @@ export const LoginForm = () => {
           setUsername(e.target.value)
         }
       />
-      <Button type="submit">Enter</Button>
+      <Button type="submit" disabled={username.trim().length <= 0}>
+        Enter
+      </Button>
     </form>
   );
 };
