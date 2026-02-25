@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { UserService } from '../user/user.service';
+import { Server } from 'socket.io';
+import crypto from 'crypto';
 
 type Player = {
   socketId: string;
@@ -11,6 +13,7 @@ type Player = {
 
 type Race = {
   id: string;
+  name: string;
   hostId: string;
   status: 'pending' | 'countdown' | 'round1' | 'round2' | 'finished';
   players: Record<string, Player>;
@@ -24,14 +27,18 @@ export class RaceService {
   constructor(private userService: UserService) {}
 
   races: Record<string, Race> = {};
+  private server: Server;
 
-  // --- CREATE RACE ---
-  createRace(host: any) {
+  setServer(server: Server) {
+    this.server = server;
+  }
+
+  createRace(hostId: string, name: string) {
     const id = crypto.randomUUID();
-
-    this.races[id] = {
+    const race: Race = {
       id,
-      hostId: host.id,
+      name,
+      hostId,
       status: 'pending',
       players: {},
       round: 0,
@@ -40,15 +47,17 @@ export class RaceService {
         'NestJS makes backend development structured and scalable',
       ],
     };
-
-    return this.races[id];
+    this.races[id] = race;
+    return race;
   }
 
-  // --- JOIN ---
-  joinRace(raceId: string, socketId: string, user: any) {
+  joinRace(
+    raceId: string,
+    socketId: string,
+    user: { id: string; username: string },
+  ) {
     const race = this.races[raceId];
     if (!race || race.status !== 'pending') return;
-
     race.players[socketId] = {
       socketId,
       userId: user.id,
@@ -58,38 +67,71 @@ export class RaceService {
     };
   }
 
+  getRace(raceId: string) {
+    return this.races[raceId];
+  }
+
   listPending() {
     return Object.values(this.races).filter((r) => r.status === 'pending');
   }
 
-  // --- START COUNTDOWN ---
-  startCountdown(raceId: string, callback: () => void) {
+  startCountdown(
+    raceId: string,
+    countdownCallback: (count: number) => void,
+    startCallback: () => void,
+  ) {
     const race = this.races[raceId];
     if (!race) return;
 
     race.status = 'countdown';
+    let count = 5;
 
-    setTimeout(() => {
-      this.startRound(raceId, 1, callback);
-    }, 5000);
+    const interval = setInterval(() => {
+      countdownCallback(count);
+      count--;
+
+      if (count < 0) {
+        clearInterval(interval);
+        this.startRound(raceId, 1, startCallback);
+      }
+    }, 1000);
+
+    // Emit countdown to all clients in race
+    this.server.to(raceId).emit('raceUpdate', {
+      id: race.id,
+      name: race.name,
+      status: race.status,
+      round: race.round,
+      sentences: race.sentences,
+      players: Object.values(race.players),
+      hostId: race.hostId,
+    });
   }
 
-  // --- START ROUND ---
   startRound(raceId: string, roundNumber: number, callback: () => void) {
     const race = this.races[raceId];
     if (!race) return;
 
-    race.status = roundNumber === 1 ? 'round1' : 'round2';
     race.round = roundNumber;
+    race.status = roundNumber === 1 ? 'round1' : 'round2';
+
+    // Emit updated race to all clients
+    this.server.to(raceId).emit('raceUpdate', {
+      id: race.id,
+      name: race.name,
+      status: race.status,
+      round: race.round,
+      sentences: race.sentences,
+      players: Object.values(race.players),
+      hostId: race.hostId,
+    });
 
     const startTime = Date.now();
-
     race.roundTimer = setTimeout(async () => {
       await this.endRound(raceId, startTime, callback);
-    }, 20000);
+    }, 20000); // 20s per round
   }
 
-  // --- END ROUND ---
   async endRound(raceId: string, startTime: number, callback: () => void) {
     const race = this.races[raceId];
     if (!race) return;
@@ -99,7 +141,6 @@ export class RaceService {
     for (const player of Object.values(race.players)) {
       const words = race.sentences[race.round - 1].split(' ').length;
       const wpm = (words / duration) * 60;
-
       player.totalWpm += wpm;
       player.progress = 0;
     }
@@ -112,18 +153,6 @@ export class RaceService {
     }
   }
 
-  // --- UPDATE PROGRESS ---
-  updateProgress(raceId: string, socketId: string, index: number) {
-    const race = this.races[raceId];
-    if (!race) return;
-
-    const player = race.players[socketId];
-    if (!player) return;
-
-    player.progress = index;
-  }
-
-  // --- FINISH ---
   async finishRace(raceId: string) {
     const race = this.races[raceId];
     if (!race) return;
@@ -134,6 +163,26 @@ export class RaceService {
       const averageWpm = player.totalWpm / 2;
       await this.userService.updateStats(player.userId, averageWpm);
     }
+
+    this.server.to(raceId).emit('raceUpdate', {
+      id: race.id,
+      name: race.name,
+      status: race.status,
+      round: race.round,
+      sentences: race.sentences,
+      players: Object.values(race.players),
+      hostId: race.hostId,
+    });
+  }
+
+  updateProgress(raceId: string, socketId: string, index: number) {
+    const race = this.races[raceId];
+    if (!race) return;
+
+    const player = race.players[socketId];
+    if (!player) return;
+
+    player.progress = index;
   }
 
   removePlayer(socketId: string) {
