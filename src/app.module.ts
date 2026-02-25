@@ -18,6 +18,7 @@ import { User } from './user/user.entity';
         username: config.get<string>('DB_USER'),
         password: config.get<string>('DB_PASS'),
         database: config.get<string>('DB_NAME'),
+        ssl: { rejectUnauthorized: false },
         entities: [User],
         synchronize: true,
       }),
