@@ -16,6 +16,8 @@
 
 ---
 
+Frontend code at `fe` branch, Backend code at `main` branch
+
 ##  things to fix / to do I've notices during coding
 
 ### Scoreboard
