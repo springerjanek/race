@@ -40,6 +40,8 @@ Frontend code at `fe` branch, Backend code at `main` branch
 
 ### Deprecated Form Types `React.FormEvent<HTMLFormElement>`
 
+### Possibly improve protected route so when going back to / as logged in user it should not showcase it even for a milisecond
+
 ### Testing
 
 ---
