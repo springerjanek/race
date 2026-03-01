@@ -4,6 +4,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UserModule } from './user/user.module';
 import { RaceModule } from './race/race.module';
 import { User } from './user/user.entity';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 
 @Module({
   imports: [
@@ -26,5 +28,7 @@ import { User } from './user/user.entity';
     UserModule,
     RaceModule,
   ],
+  providers: [AppService],
+  controllers: [AppController],
 })
 export class AppModule {}
